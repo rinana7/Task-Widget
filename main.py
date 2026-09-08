@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QLabel, QWidget
+from PyQt6.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt, QTimer
 import requests
@@ -34,7 +34,29 @@ class TaskWidget(QWidget):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
-        self.label = QLabel(self)
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2)
+        self.setLayout(layout)
+
+        self.bubble = QLabel("Loading...", self)
+        self.bubble.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.bubble.setStyleSheet("""
+            QLabel {
+                background-color: #2D3748;
+                color: #EDF2F7;
+                border: 2px solid #4A5568;
+                border-radius: 10px;
+                padding: 6px 10px;
+                font-family: 'Courier New', monospace;
+                font-size: 11px;
+                font-weight: bold;
+            }
+        """)
+        layout.addWidget(self.bubble, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        self.cat_label = QLabel(self)
+        layout.addWidget(self.cat_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
         raw_frame1 = QPixmap("assets/cat-frame.png")
         raw_frame2 = QPixmap("assets/cat-frame2.png")
@@ -42,11 +64,7 @@ class TaskWidget(QWidget):
         frame1 = raw_frame1.scaledToWidth(64, Qt.TransformationMode.SmoothTransformation)
         frame2 = raw_frame2.scaledToWidth(57, Qt.TransformationMode.SmoothTransformation)
 
-        if frame1.isNull():
-            print("Warning: cat_frame1.png not found or failed to load!")
-            self.frames = []
-        else:
-            self.frames = [frame1,frame1, frame2, frame2]
+        self.frames = [frame1,frame1, frame2, frame2]
 
         self.frame_index = 0
 
@@ -57,7 +75,13 @@ class TaskWidget(QWidget):
         self.timer = QTimer()
         self.timer.timeout.connect(self.walk)
         self.timer.start(150)
+
+        self.weather_timer = QTimer()
+        self.weather_timer.timeout.connect(self.update_weather)
+        self.weather_timer.start(900000)
+
         self.show()
+        self.update_weather()
 
 
     def walk(self):
@@ -68,6 +92,8 @@ class TaskWidget(QWidget):
         self.label.adjustSize()
         self.adjustSize()
         self.x+=3
+        if self.x > 1400:
+            self.s =-60
         self.move(self.x, self.y)
 
     def update_weather(self):
