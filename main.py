@@ -49,17 +49,30 @@ class TaskWidget(QWidget):
         self.x+=3
         self.move(self.x, self.y)
 
-    def get_weather():
-        url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+    LAT="21.3069"
+    LON="157.8583"
+    def get_weather(lat=LAT, lon=LON):
+        headers = {
+            "User-Agent": "(TaskWidgetApp, taskwidget@example.com)"
+        }
         try:
-            res = requests.get(url, timeout=5).json()
-            if res.get("cod") == 200:
-                temp = round(res["main"]["temp"])
-                desc = res["weather"][0]["description"].capitalize()
-                return f"It's {temp}°C & {desc}"
-            return "Coudn't fetch weather"
-        except Exception:
+            point_url = f"https://api.weather.gov/points/{lat},{lon}"
+            point_res = requests.get(point_url, headers=headers, timeout=5).json()
+            forecast_url = point_res["properties"]["forecast"]
+            forecast_res = requests.get(forecast_url, headers=headers, timeout=5).json
+            current_period = forecast_res["properties"]["periods"][0]
+
+            temp = current_period["temperature"]
+            unit = current_period["tempertureUnit"]
+            desc = current_period["shortForecast"]
+            return f"It's {temp}°{unit} & {desc}"
+        except Exception as e:
             return "No connection"
+
+    def update_weather(self):
+        msg = get_weather(LAT,LON)
+        self.bubble.setText(f"🐱: {msg}")
+        self.adjustSize()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
