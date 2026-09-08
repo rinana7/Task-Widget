@@ -11,7 +11,7 @@ class TaskWidget(QWidget):
             Qt.WindowType.WindowStaysOnTopHint | 
             Qt.WindowType.Tool
         )
-        self.setAttricute(Qt.WidgetAttribut.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self.label = QLabel(self)
         self.frames = [QPixmap("cat_frame.png"), QPixmap("cat_frame2.png")]
