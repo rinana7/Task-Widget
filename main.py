@@ -14,14 +14,17 @@ class TaskWidget(QWidget):
 
         self.label = QLabel(self)
 
-        frame1 = QPixmap("assets/cat-frame.png")
-        frame2 = QPixmap("assets/cat-frame2.png")
+        raw_frame1 = QPixmap("assets/cat-frame.png")
+        raw_frame2 = QPixmap("assets/cat-frame2.png")
+
+        frame1 = raw_frame1.scaledToWidth(64, Qt.TransformationMode.SmoothTransformation)
+        frame2 = raw_frame2.scaledToWidth(57, Qt.TransformationMode.SmoothTransformation)
 
         if frame1.isNull():
             print("Warning: cat_frame1.png not found or failed to load!")
             self.frames = []
         else:
-            self.frames = [frame1, frame2]
+            self.frames = [frame1,frame1, frame2, frame2]
 
         self.frame_index = 0
 
