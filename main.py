@@ -2,6 +2,7 @@ import sys
 from PyQt6.QtWidgets import QApplication, QLabel, QWidget
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt, QTimer
+import requests
 
 class TaskWidget(QWidget):
     def __init__(self):
@@ -47,6 +48,18 @@ class TaskWidget(QWidget):
         self.adjustSize()
         self.x+=3
         self.move(self.x, self.y)
+
+    def get_weather():
+        url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+        try:
+            res = requests.get(url, timeout=5).json()
+            if res.get("cod") == 200:
+                temp = round(res["main"]["temp"])
+                desc = res["weather"][0]["description"].capitalize()
+                return f"It's {temp}°C & {desc}"
+            return "Coudn't fetch weather"
+        except Exception:
+            return "No connection"
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
