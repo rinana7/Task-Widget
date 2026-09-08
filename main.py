@@ -6,7 +6,7 @@ import requests
 
 
 LAT="21.3069"
-LON="157.8583"
+LON="-157.8583"
 def get_weather(lat=LAT, lon=LON):
     headers = {
         "User-Agent": "(TaskWidgetApp, taskwidget@example.com)"
@@ -16,11 +16,12 @@ def get_weather(lat=LAT, lon=LON):
         point_res = requests.get(point_url, headers=headers, timeout=5).json()
         forecast_url = point_res["properties"]["forecast"]
 
-        forecast_res = requests.get(forecast_url, headers=headers, timeout=5).json
+        forecast_res = requests.get(forecast_url, headers=headers, timeout=5).json()
         current = forecast_res["properties"]["periods"][0]
 
         return f"{current['temperature']}°{current['temperatureUnit']} • {current['shortForecast']}"   
-    except Exception:
+    except Exception as e:
+        print("Weather Error:", e)
         return "No connection"
 
     
@@ -93,7 +94,7 @@ class TaskWidget(QWidget):
         self.adjustSize()
         self.x+=3
         if self.x > 1400:
-            self.s =-60
+            self.x = -60
         self.move(self.x, self.y)
 
     def update_weather(self):
