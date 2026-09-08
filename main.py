@@ -86,10 +86,10 @@ class TaskWidget(QWidget):
 
     def walk(self):
         if self.frames:
-            self.label.setPixmap(self.frames[self.frame_index])
+            self.cat_label.setPixmap(self.frames[self.frame_index])
             self.frame_index = (self.frame_index+1)%len(self.frames)
 
-        self.label.adjustSize()
+        self.cat_label.adjustSize()
         self.adjustSize()
         self.x+=3
         if self.x > 1400:
