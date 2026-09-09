@@ -307,8 +307,6 @@ class TaskWidget(QWidget):
 
         if action == sit_action:
             self.toggle_sit()
-        elif action == pause_action:
-            self.toggle_pause()
         elif action == quit_action:
             QApplication.quit()
 
