@@ -51,7 +51,7 @@ class TaskWidget(QWidget):
                 border: 2px solid #4A5568;
                 border-radius: 10px;
                 padding: 6px 10px;
-                font-family: 'Courier New', monospace;
+                font-family: 'Courier New', Menlo;
                 font-size: 11px;
                 font-weight: bold;
             }
