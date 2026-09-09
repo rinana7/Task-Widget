@@ -42,6 +42,11 @@ class TaskWidget(QWidget):
         self.is_sitting = False
         self.drag_position = None
         self.click_start_pos = None
+        self.pomo_time_left = 25*60
+        self.pomo_active = False
+
+        self.pomo_timer = QTimer(self)
+        self.pomo_timer.timeout.connect(self.update_pomodoro_tick)
 
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint | 
@@ -88,11 +93,19 @@ class TaskWidget(QWidget):
                 background-color: #4A5568;
             }
         """)
-        refresh_action = self.bubble_menu.addAction("🔄 Refresh Weather")
-        refresh_action.triggered.connect(self.update_weather)
+
+        pomo_menu = self.bubble_menu.addMenu("Pomodoro")
+        start_pomo = pomo_menu.addAction("▶ Start Focus (25m)")
+        start_pomo.triggered.connect(self.start_pomodoro)
         
-        toggle_sit_action = self.bubble_menu.addAction("🪑 Sit / Stand")
-        toggle_sit_action.triggered.connect(self.toggle_sit)
+        pause_pomo = pomo_menu.addAction("⏸ Pause Timer")
+        pause_pomo.triggered.connect(self.pause_pomodoro)
+        
+        reset_pomo = pomo_menu.addAction("Reset Timer")
+        reset_pomo.triggered.connect(self.reset_pomodoro)
+
+        refresh_action = self.bubble_menu.addAction("Refresh Weather")
+        refresh_action.triggered.connect(self.update_weather)
         
         self.bubble.setMenu(self.bubble_menu)
         layout.addWidget(self.bubble, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -210,7 +223,41 @@ class TaskWidget(QWidget):
         
         self.move(self.x, self.y)
 
+    def start_pomodoro(self):
+        self.pomo_active = True
+        self.pomo_timer.start(1000)
+        self.update_pomodoro_display()
+
+    def pause_pomodoro(self):
+        self.pomo_active = False
+        self.pomo_timer.stop()
+
+    def reset_pomodoro(self):
+        self.pomo_timer.stop()
+        self.pomo_active = False
+        self.pomo_time_left = 25 * 60
+        self.update_weather()
+
+    def update_pomodoro_tick(self):
+        if self.pomo_time_left > 0:
+            self.pomo_time_left -= 1
+            self.update_pomodoro_display()
+        else:
+            self.pomo_timer.stop()
+            self.pomo_active = False
+            self.bubble.setText("Time's up! Take a break! ☕")
+            self.adjustSize()
+            self.toggle_sit()  # Make the cat sit when time is up
+
+    def update_pomodoro_display(self):
+        minutes = self.pomo_time_left // 60
+        seconds = self.pomo_time_left % 60
+        self.bubble.setText(f"🐱 Focus: {minutes:02d}:{seconds:02d}")
+        self.adjustSize()
+
     def update_weather(self):
+        if self.pomo_active:
+            return
         msg = get_weather(LAT,LON)
         self.bubble.setText(f"🐱: {msg}")
         self.adjustSize()
