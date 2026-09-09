@@ -1,12 +1,12 @@
 import sys
-from PyQt6.QtWidgets import (
-    QApplication, QLabel, QVBoxLayout, QWidget, QMenu, QSystemTrayIcon
-)
-from PyQt6.QtGui import QPixmap, QIcon
-from PyQt6.QtCore import Qt, QTimer
-import requests
-import ctypes
 import os
+import ctypes
+import requests
+from PyQt6.QtWidgets import (
+    QApplication, QLabel, QVBoxLayout, QWidget, QMenu, QSystemTrayIcon, QPushButton
+)
+from PyQt6.QtGui import QPixmap, QIcon, QTransform
+from PyQt6.QtCore import Qt, QTimer
 
 def resource_path(relative_path):
     try:
@@ -38,8 +38,10 @@ def get_weather(lat=LAT, lon=LON):
 class TaskWidget(QWidget):
     def __init__(self):
         super().__init__()
-        self.is_paused=False
+        self.is_paused = False
+        self.is_sitting = False
         self.drag_position = None
+        self.click_start_pos = None
 
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint | 
@@ -53,20 +55,46 @@ class TaskWidget(QWidget):
         layout.setSpacing(2)
         self.setLayout(layout)
 
-        self.bubble = QLabel("Loading...", self)
-        self.bubble.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.bubble = QPushButton("Loading...", self)
         self.bubble.setStyleSheet("""
-            QLabel {
+            QPushButton {
                 background-color: #2D3748;
                 color: #EDF2F7;
                 border: 2px solid #4A5568;
                 border-radius: 10px;
                 padding: 6px 10px;
-                font-family: 'Courier New', Menlo;
+                font-family: 'Menlo', 'Courier New', monospace;
                 font-size: 11px;
                 font-weight: bold;
             }
+            QPushButton::menu-indicator {
+                image: none;
+            }
+            QPushButton:hover {
+                background-color: #4A5568;
+            }
         """)
+
+        self.bubble_menu = QMenu(self)
+        self.bubble_menu.setStyleSheet("""
+            QMenu {
+                background-color: #2D3748;
+                color: #EDF2F7;
+                border: 1px solid #4A5568;
+                font-family: 'Menlo', 'Courier New', monospace;
+                font-size: 11px;
+            }
+            QMenu::item:selected {
+                background-color: #4A5568;
+            }
+        """)
+        refresh_action = self.bubble_menu.addAction("🔄 Refresh Weather")
+        refresh_action.triggered.connect(self.update_weather)
+        
+        toggle_sit_action = self.bubble_menu.addAction("🪑 Sit / Stand")
+        toggle_sit_action.triggered.connect(self.toggle_sit)
+        
+        self.bubble.setMenu(self.bubble_menu)
         layout.addWidget(self.bubble, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.cat_label = QLabel(self)
@@ -82,8 +110,16 @@ class TaskWidget(QWidget):
         frame2 = raw_frame2.scaledToWidth(57, Qt.TransformationMode.FastTransformation)
 
         self.frames = [frame1,frame1, frame2, frame2]
-
         self.frame_index = 0
+
+
+        sit_pixmap = QPixmap(resource_path("assets/cat-sit.png"))
+        
+        if sit_pixmap.isNull():
+            self.sit_frame = frame1
+        else:
+            self.sit_frame = sit_pixmap.scaledToWidth(64, Qt.TransformationMode.FastTransformation)
+
         if self.frames:
             self.cat_label.setPixmap(self.frames[0])
 
@@ -137,7 +173,20 @@ class TaskWidget(QWidget):
         else:
             self.show()
 
+    def toggle_sit(self):
+        self.is_sitting = not self.is_sitting
+        if self.is_sitting:
+            pixmap = self.sit_frame
+            if self.dx < 0:
+                pixmap = pixmap.transformed(QTransform().scale(-1, 1))
+            self.cat_label.setPixmap(pixmap)
+            self.cat_label.adjustSize()
+            self.adjustSize()        
+
     def walk(self):
+        if self.is_sitting or self.is_paused:
+            return
+        
         if self.frames:
             current_pixmap = self.frames[self.frame_index]
 
@@ -180,7 +229,12 @@ class TaskWidget(QWidget):
             event.accept()
 
     def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton and self.click_start_pos:
+            delta = (event.globalPosition().toPoint() - self.click_start_pos).manhattanLength()
+            if delta < 5:
+                self.toggle_sit()
         self.drag_position = None
+        self.click_start_pos = None
 
     def contextMenuEvent(self, event):
         from PyQt6.QtWidgets import QMenu
@@ -198,25 +252,23 @@ class TaskWidget(QWidget):
                 background-color: #4A5568;
             }
         """)
-
+        sit_text = "Walk" if self.is_sitting else "Sit"
+        sit_action = menu.addAction(sit_text)
         pause_text = "▶ Resume Walk" if self.is_paused else "⏸ Pause Walk"
         pause_action = menu.addAction(pause_text)
         quit_action = menu.addAction("Quit TaskWidget")
 
         action = menu.exec(event.globalPos())
 
-        if action == pause_action:
+        if action == sit_action:
+            self.toggle_sit()
+        elif action == pause_action:
             self.toggle_pause()
-        elif action ==quit_action:
+        elif action == quit_action:
             QApplication.quit()
 
     def toggle_pause(self):
-        if self.is_paused:
-            self.timer.start(150)
-            self.is_paused = False
-        else:
-            self.timer.stop()
-            self.is_paused = True
+        self.is_paused = not self.is_paused
 
     
     def showEvent(self, event):
@@ -232,7 +284,7 @@ class TaskWidget(QWidget):
             if ns_window:
                 behavior = NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorStationary
                 ns_window.setCollectionBehavior_(behavior)
-                ns_window.setLevel_(3) 
+                ns_window.setLevel_(5) 
         except Exception as e:
             print("Space Behavior Error:", e)
 
