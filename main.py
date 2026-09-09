@@ -6,6 +6,14 @@ from PyQt6.QtGui import QPixmap, QIcon
 from PyQt6.QtCore import Qt, QTimer
 import requests
 import ctypes
+import os
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 LAT="21.3069"
 LON="-157.8583"
@@ -64,8 +72,8 @@ class TaskWidget(QWidget):
         self.cat_label = QLabel(self)
         layout.addWidget(self.cat_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        raw_frame1 = QPixmap("assets/cat-frame.png")
-        raw_frame2 = QPixmap("assets/cat-frame2.png")
+        raw_frame1 = QPixmap(resource_path("assets/cat-frame.png"))
+        raw_frame2 = QPixmap(resource_path("assets/cat-frame2.png"))
 
         if raw_frame1.isNull() or raw_frame2.isNull():
             print("Error: Could not load cat assets")
