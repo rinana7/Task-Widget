@@ -28,6 +28,7 @@ def get_weather(lat=LAT, lon=LON):
 class TaskWidget(QWidget):
     def __init__(self):
         super().__init__()
+        self.drag_position = None
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint | 
             Qt.WindowType.WindowStaysOnTopHint |
@@ -106,6 +107,23 @@ class TaskWidget(QWidget):
         self.bubble.setText(f"🐱: {msg}")
         self.adjustSize()
 
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.drag_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            event.accept()
+
+    def mouseMoveEvent(self,event):
+        if event.buttons() == Qt.MouseButton.LeftButton and self.drag_position is not None:
+            new_pos = event.globalPosition().toPoint()- self.drag_position
+            self.move(new_pos)
+            self.x = new_pos.x()
+            self.y = new_pos.y()
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        self.drag_position = None
+
+    
     def showEvent(self, event):
         super().showEvent(event)
         try:
