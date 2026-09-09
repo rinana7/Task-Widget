@@ -118,7 +118,7 @@ class TaskWidget(QWidget):
         if sit_pixmap.isNull():
             self.sit_frame = frame1
         else:
-            self.sit_frame = sit_pixmap.scaledToWidth(64, Qt.TransformationMode.FastTransformation)
+            self.sit_frame = sit_pixmap.scaledToWidth(48, Qt.TransformationMode.FastTransformation)
 
         if self.frames:
             self.cat_label.setPixmap(self.frames[0])
