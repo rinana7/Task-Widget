@@ -299,10 +299,8 @@ class TaskWidget(QWidget):
                 background-color: #4A5568;
             }
         """)
-        sit_text = "Walk" if self.is_sitting else "Sit"
+        sit_text = "▶ Resume Walk" if self.is_sitting else "⏸ Pause Walk"
         sit_action = menu.addAction(sit_text)
-        pause_text = "▶ Resume Walk" if self.is_paused else "⏸ Pause Walk"
-        pause_action = menu.addAction(pause_text)
         quit_action = menu.addAction("Quit TaskWidget")
 
         action = menu.exec(event.globalPos())
