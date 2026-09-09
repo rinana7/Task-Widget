@@ -28,6 +28,7 @@ def get_weather(lat=LAT, lon=LON):
 class TaskWidget(QWidget):
     def __init__(self):
         super().__init__()
+        self.is_paused=False
         self.drag_position = None
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint | 
@@ -122,6 +123,42 @@ class TaskWidget(QWidget):
 
     def mouseReleaseEvent(self, event):
         self.drag_position = None
+
+    def contextMenuEvent(self, event):
+        from PyQt6.QtWidgets import QMenu
+
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+            QMenu {
+                background-color: #2D3748;
+                color: #EDF2F7;
+                border: 1px solid #4A5568;
+                font-family: 'Courier New', monospace;
+                font-size: 11px;
+            }
+            QMenu::item:selected {
+                background-color: #4A5568;
+            }
+        """)
+
+        pause_text = "▶ Resume Walk" if self.is_paused else "⏸ Pause Walk"
+        pause_action = menu.addAction(pause_text)
+        quit_action = menu.addAction("Quit TaskWidget")
+
+        action = menu.exec(event.globalPos())
+
+        if action == pause_action:
+            self.toggle_pause()
+        elif action ==quit_action:
+            QApplication.quit()
+
+    def toggle_pause(self):
+        if self.is_paused:
+            self.timer.start(150)
+            self.is_paused = False
+        else:
+            self.timer.stop()
+            self.is_paused = True
 
     
     def showEvent(self, event):
