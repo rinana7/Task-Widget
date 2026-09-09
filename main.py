@@ -1,6 +1,8 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import (
+    QApplication, QLabel, QVBoxLayout, QWidget, QMenu, QSystemTrayIcon
+)
+from PyQt6.QtGui import QPixmap, QIcon
 from PyQt6.QtCore import Qt, QTimer
 import requests
 import ctypes
@@ -30,10 +32,11 @@ class TaskWidget(QWidget):
         super().__init__()
         self.is_paused=False
         self.drag_position = None
+
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint | 
             Qt.WindowType.WindowStaysOnTopHint |
-            Qt.WindowType.Window
+            Qt.WindowType.ToolTip
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
@@ -66,6 +69,7 @@ class TaskWidget(QWidget):
 
         if raw_frame1.isNull() or raw_frame2.isNull():
             print("Error: Could not load cat assets")
+
         frame1 = raw_frame1.scaledToWidth(64, Qt.TransformationMode.FastTransformation)
         frame2 = raw_frame2.scaledToWidth(57, Qt.TransformationMode.FastTransformation)
 
@@ -77,7 +81,10 @@ class TaskWidget(QWidget):
 
         self.x = 200
         self.y = 200
+        self.dx = 3
         self.move(self.x, self.y)
+
+        self.setup_tray_icon(raw_frame1)
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.walk)
@@ -90,17 +97,60 @@ class TaskWidget(QWidget):
         self.show()
         self.update_weather()
 
+    def setup_tray_icon(self, pixmap):
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(QIcon(pixmap))
+
+        tray_menu = QMenu()
+        tray_menu.setStyleSheet("""
+            QMenu {
+                background-color: #2D3748;
+                color: #EDF2F7;
+                border: 1px solid #4A5568;
+                font-family: 'Menlo', 'Courier New', monospace;
+                font-size: 11px;
+            }
+            QMenu::item:selected {
+                background-color: #4A5568;
+            }
+        """)
+        toggle_action = tray_menu.addAction("Show/Hide Cat")
+        toggle_action.triggered.connect(self.toggle_visibility)
+
+        quit_action = tray_menu.addAction("Exit App")
+        quit_action.triggered.connect(QApplication.quit)
+
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.show()
+
+    def toggle_visibility(self):
+        if self.isVisible():
+            self.hide()
+        else:
+            self.show()
 
     def walk(self):
         if self.frames:
-            self.cat_label.setPixmap(self.frames[self.frame_index])
+            current_pixmap = self.frames[self.frame_index]
+
+            if self.dx <0:
+                from PyQt6.QtGui import QTransform
+                current_pixmap = current_pixmap.transformed(QTransform().scale(-1, 1))
+            self.cat_label.setPixmap(current_pixmap)
             self.frame_index = (self.frame_index+1)%len(self.frames)
 
         self.cat_label.adjustSize()
         self.adjustSize()
-        self.x+=3
-        if self.x > 1400:
-            self.x = -60
+        self.x+=self.dx
+
+        screen = QApplication.primaryScreen()
+        screen_width = screen.geometry().width() if screen else 1400
+
+        if self.x + self.width() >= screen_width:
+            self.dx = -3
+        elif self.x <= 0:
+            self.dx = 3
+        
         self.move(self.x, self.y)
 
     def update_weather(self):
@@ -180,5 +230,6 @@ class TaskWidget(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
     pet = TaskWidget()
     sys.exit(app.exec())
