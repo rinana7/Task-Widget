@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt, QTimer
 import requests
-
+import ctypes
 
 LAT="21.3069"
 LON="-157.8583"
@@ -31,7 +31,7 @@ class TaskWidget(QWidget):
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint | 
             Qt.WindowType.WindowStaysOnTopHint |
-            Qt.WindowType.Tool
+            Qt.WindowType.Window
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
@@ -62,12 +62,16 @@ class TaskWidget(QWidget):
         raw_frame1 = QPixmap("assets/cat-frame.png")
         raw_frame2 = QPixmap("assets/cat-frame2.png")
 
-        frame1 = raw_frame1.scaledToWidth(64, Qt.TransformationMode.SmoothTransformation)
-        frame2 = raw_frame2.scaledToWidth(57, Qt.TransformationMode.SmoothTransformation)
+        if raw_frame1.isNull() or raw_frame2.isNull():
+            print("Error: Could not load cat assets")
+        frame1 = raw_frame1.scaledToWidth(64, Qt.TransformationMode.FastTransformation)
+        frame2 = raw_frame2.scaledToWidth(57, Qt.TransformationMode.FastTransformation)
 
         self.frames = [frame1,frame1, frame2, frame2]
 
         self.frame_index = 0
+        if self.frames:
+            self.cat_label.setPixmap(self.frames[0])
 
         self.x = 200
         self.y = 200
@@ -101,6 +105,23 @@ class TaskWidget(QWidget):
         msg = get_weather(LAT,LON)
         self.bubble.setText(f"🐱: {msg}")
         self.adjustSize()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        try:
+            import objc
+            NSWindowCollectionBehaviorCanJoinAllSpaces = 1 << 0
+            NSWindowCollectionBehaviorStationary = 1 << 4
+            
+            ns_view = objc.objc_object(c_void_p=ctypes.c_void_p(int(self.winId())))
+            ns_window = ns_view.window()
+            
+            if ns_window:
+                behavior = NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorStationary
+                ns_window.setCollectionBehavior_(behavior)
+                ns_window.setLevel_(3) 
+        except Exception as e:
+            print("Space Behavior Error:", e)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
