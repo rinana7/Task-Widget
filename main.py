@@ -197,6 +197,9 @@ class TaskWidget(QWidget):
             self.show()
 
     def toggle_sit(self):
+
+        if self.is_sleeping:
+            self.wake_up()
         self.is_sitting = not self.is_sitting
         if self.is_sitting:
             pixmap = self.sit_frame
@@ -274,6 +277,9 @@ class TaskWidget(QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
+            if self.is_sleeping:
+                self.wake_up()
+            self.click_start_pos = event.globalPosition().toPoint()
             self.drag_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
             event.accept()
 
@@ -302,7 +308,7 @@ class TaskWidget(QWidget):
                 background-color: #2D3748;
                 color: #EDF2F7;
                 border: 1px solid #4A5568;
-                font-family: 'Courier New', monospace;
+                font-family: 'Menlo', 'Courier New', monospace;
                 font-size: 11px;
             }
             QMenu::item:selected {
@@ -344,7 +350,7 @@ class TaskWidget(QWidget):
     def check_idle_time(self):
         if self.is_sitting or self.is_paused:
             self.idle_seconds += 1
-            if self.idle_second >= 10 and not self.is_sleeping:
+            if self.idle_seconds >= 10 and not self.is_sleeping:
                 self.start_sleeping()
             elif self.is_sleeping:
                 self.animate_zzz()
@@ -364,7 +370,7 @@ class TaskWidget(QWidget):
 
     def animate_zzz(self):
         zzz_text = self.zzz_frames[self.zzz_index]
-        self.bubble.setText(f"🐱 💤 {zzz_text}")
+        self.bubble.setText(f"🐱: {zzz_text}")
         self.adjustSize()
         self.zzz_index = (self.zzz_index + 1) % len(self.zzz_frames)
 
