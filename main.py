@@ -42,11 +42,21 @@ class TaskWidget(QWidget):
         self.is_sitting = False
         self.drag_position = None
         self.click_start_pos = None
+
+        self.idle_seconds = 0
+        self.is_sleeping = False
+        self.zzz_index = 0
+        self.zzz_frames = ["z", "zz", "zzz", "ZZZ"]
+
         self.pomo_time_left = 25*60
         self.pomo_active = False
 
         self.pomo_timer = QTimer(self)
         self.pomo_timer.timeout.connect(self.update_pomodoro_tick)
+
+        self.idle_timer = QTimer(self)
+        self.idle_timer.timeout.connect(self.check_idle_time)
+        self.idle_timer.start(1000)
 
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint | 
@@ -330,6 +340,38 @@ class TaskWidget(QWidget):
                 ns_window.setLevel_(5) 
         except Exception as e:
             print("Space Behavior Error:", e)
+
+    def check_idle_time(self):
+        if self.is_sitting or self.is_paused:
+            self.idle_seconds += 1
+            if self.idle_second >= 10 and not self.is_sleeping:
+                self.start_sleeping()
+            elif self.is_sleeping:
+                self.animate_zzz()
+        else:
+            if self.is_sleeping:
+                self.wake_up()
+            self.idle_seconds = 0
+
+    def start_sleeping(self):
+        self.is_sleeping = True
+        sleep_pixmap = QPixmap(resource_path("assets/cat-sleep.png"))
+        if not sleep_pixmap.isNull():
+            pixmap = sleep_pixmap.scaledToWidth(48, Qt.TransformationMode.FastTransformation)
+            if self.dx < 0:
+                pixmap = pixmap.transformed(QTransform().scale(-1, 1))
+            self.cat_label.setPixmap(pixmap)
+
+    def animate_zzz(self):
+        zzz_text = self.zzz_frames[self.zzz_index]
+        self.bubble.setText(f"🐱 💤 {zzz_text}")
+        self.adjustSize()
+        self.zzz_index = (self.zzz_index + 1) % len(self.zzz_frames)
+
+    def wake_up(self):
+        self.is_sleeping = False
+        self.idle_seconds = 0
+        self.update_weather()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
